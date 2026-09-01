@@ -1,0 +1,34 @@
+[project]
+name = "regimelab"
+version = "1.0.0"
+description = "Cross-asset market regime switching via differentiable latent state-space models (VAE + neural SDE + differentiable Kalman filter)"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2",
+    "torchsde>=0.2.6",
+    "numpy>=1.26",
+    "polars>=0.20",
+    "scikit-learn>=1.4",
+    "matplotlib>=3.8",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+    "regimelab",
+    "regimelab.data",
+    "regimelab.models",
+    "regimelab.training",
+    "regimelab.regimes",
+    "regimelab.viz",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,43 @@
+{
+  "data": {
+    "start": "1997-01-01",
+    "end": null,
+    "raw_dir": "data/raw",
+    "processed_dir": "data/processed",
+    "oil_ret_clip": 0.5,
+    "rv_window": 21
+  },
+  "model": {
+    "latent_dim": 6,
+    "obs_dim": 18,
+    "hidden": 64,
+    "enc_hidden": 64,
+    "ns_lambda_init": 0.6,
+    "obs_noise_init": 0.5,
+    "diffusion_init": 0.3,
+    "mean_reversion_init": 2.0,
+    "jitter": 1e-08
+  },
+  "train": {
+    "window": 100,
+    "stride": 10,
+    "batch_size": 24,
+    "epochs": 15,
+    "lr": 0.003,
+    "weight_decay": 0.0001,
+    "grad_clip": 1.0,
+    "kl_anneal_frac": 0.4,
+    "beta_max": 1.0,
+    "val_frac": 0.15,
+    "patience": 5,
+    "seed": 7,
+    "device": "cpu"
+  },
+  "regime": {
+    "k_min": 2,
+    "k_max": 6,
+    "gmm_n_init": 5,
+    "smooth_window": 5,
+    "seed": 7
+  }
+}

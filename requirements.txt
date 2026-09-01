@@ -1,0 +1,9 @@
+# Core (Python 3.10+)
+torch>=2.2          # CPU build is sufficient: pip install torch --index-url https://download.pytorch.org/whl/cpu
+torchsde>=0.2.6
+numpy>=1.26
+polars>=0.20
+scikit-learn>=1.4
+matplotlib>=3.8
+requests>=2.31
+pytest>=8.0

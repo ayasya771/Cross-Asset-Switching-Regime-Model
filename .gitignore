@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+data/raw/
+data/processed/
+
+outputs/checkpoints/*.pt
+outputs/checkpoints/metrics.jsonl
+outputs/regimes/*.parquet
+outputs/regimes/*.npz
+outputs/report_page.html
