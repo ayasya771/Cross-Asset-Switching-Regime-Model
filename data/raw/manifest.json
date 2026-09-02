@@ -1,0 +1,70 @@
+{
+  "y_3m": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "y_2y": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "y_5y": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "y_10y": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "y_30y": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "hy_oas": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "ig_oas": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "vix": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "ted": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "usd_idx": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "wti": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "spx": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "ndx": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "cpi": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "indpro": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "unrate": {
+    "source": "synthetic",
+    "status": "ok"
+  },
+  "gdp": {
+    "source": "synthetic",
+    "status": "ok"
+  }
+}

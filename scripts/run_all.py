@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""End-to-end pipeline: download -> build dataset -> train -> extract regimes."""
+"""End-to-end pipeline: acquire data, build the panel, train, extract regimes,
+render both reports, and refresh the payload the web demo loads.
+
+Data acquisition has two modes. ``--synthetic`` generates the calibrated panel
+with known regime ground truth and needs no network. The default downloads the
+real series from the free endpoints; if that fails the run stops rather than
+silently substituting synthetic data, since the two are not interchangeable
+for any claim about real markets.
+"""
 from __future__ import annotations
 
 import argparse
@@ -18,17 +26,32 @@ def run(script: str, *extra: str) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--skip-download", action="store_true",
-                    help="reuse whatever is already in data/raw")
+    src = ap.add_mutually_exclusive_group()
+    src.add_argument("--synthetic", action="store_true",
+                     help="generate the synthetic panel instead of downloading")
+    src.add_argument("--skip-download", action="store_true",
+                     help="reuse whatever is already in data/raw")
     ap.add_argument("--epochs", type=int, default=None)
     args = ap.parse_args()
 
-    if not args.skip_download:
-        run("download_data.py")
+    if args.synthetic:
+        run("make_synthetic.py")
+    elif not args.skip_download:
+        try:
+            run("download_data.py")
+        except subprocess.CalledProcessError:
+            print(
+                "\ndownload failed. Re-run with --synthetic to use the offline "
+                "validation panel, or with --skip-download to reuse data/raw.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+
     run("build_dataset.py")
-    train_args = ["--epochs", str(args.epochs)] if args.epochs else []
-    run("train.py", *train_args)
+    run("train.py", *(["--epochs", str(args.epochs)] if args.epochs else []))
     run("extract_regimes.py")
+    run("build_report_page.py")
+    run("export_web_demo.py")
 
 
 if __name__ == "__main__":

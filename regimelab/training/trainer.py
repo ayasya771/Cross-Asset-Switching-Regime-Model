@@ -157,7 +157,7 @@ def load_checkpoint(path: Path):
     """Rebuild a trained model from a checkpoint file."""
     from ..config import ModelConfig
 
-    ckpt = torch.load(path, map_location="cpu", weights_only=False)
+    ckpt = torch.load(path, map_location="cpu", weights_only=True)
     mcfg = ModelConfig(**ckpt["model_cfg"])
     model = build_model(mcfg, ckpt["meta"])
     model.load_state_dict(ckpt["model_state"])

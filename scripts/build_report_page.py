@@ -11,7 +11,7 @@ from string import Template
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from regimelab.config import FIGURES, OUTPUTS, REGIMES
+from regimelab.config import DATA_PROCESSED, FIGURES, OUTPUTS, REGIMES
 
 CAT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]
 
@@ -123,6 +123,7 @@ def img_uri(path: Path) -> str:
 
 def main() -> None:
     s = json.loads((REGIMES / "summary.json").read_text())
+    meta = json.loads((DATA_PROCESSED / "meta.json").read_text())
     k = s["k"]
     regime_rows = "\n".join(
         f"<tr><td><span class='chip' style='background:{CAT[i]}'></span>{r['name']}</td>"
@@ -265,9 +266,9 @@ def main() -> None:
 </div>
 """).substitute(
         css=CSS,
-        ndays=f"{s2n(s):,}",
-        start=meta_start(),
-        end=meta_end(),
+        ndays=f"{int(meta['n_rows']):,}",
+        start=meta["start"],
+        end=meta["end"],
         ari_true=f"{s['ari_at_true_k']:.2f}" if s.get("ari_at_true_k") is not None else "n/a",
         truek=s.get("true_k") or "?",
         k=k,
@@ -280,21 +281,6 @@ def main() -> None:
     out = OUTPUTS / "report_page.html"
     out.write_text(html)
     print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB)")
-
-
-def s2n(s: dict) -> int:
-    meta = json.loads((OUTPUTS.parent / "data" / "processed" / "meta.json").read_text())
-    return int(meta["n_rows"])
-
-
-def meta_start() -> str:
-    meta = json.loads((OUTPUTS.parent / "data" / "processed" / "meta.json").read_text())
-    return meta["start"]
-
-
-def meta_end() -> str:
-    meta = json.loads((OUTPUTS.parent / "data" / "processed" / "meta.json").read_text())
-    return meta["end"]
 
 
 if __name__ == "__main__":

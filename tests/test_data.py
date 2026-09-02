@@ -41,7 +41,6 @@ def raw_dir(tmp_path):
     _write(raw, "spx", days, 3200.0 * np.exp(np.cumsum(0.01 * rng.standard_normal(n))))
     _write(raw, "ndx", days, 8800.0 * np.exp(np.cumsum(0.012 * rng.standard_normal(n))))
 
-    months = [date(2018, m % 12 + 1, 1) for m in range(0, 36)]
     months = sorted(set(date(2018 + m // 12, m % 12 + 1, 1) for m in range(36)))
     _write(raw, "cpi", months, np.linspace(250, 270, len(months)))
     _write(raw, "indpro", months, np.linspace(100, 104, len(months)))
