@@ -27,7 +27,7 @@ function parseCsv(text) {
 }
 
 async function boot() {
-  status("fetching dataset", true);
+  status("Loading dataset", true);
   const [scaler, modelJson, panelTxt, refTxt, summary, refLatentTxt] = await Promise.all([
     fetch(DATA + "scaler.json").then((r) => r.json()),
     fetch(DATA + "model.json").then((r) => r.json()),
@@ -115,7 +115,7 @@ function buildFeatureToggles() {
   box.addEventListener("change", () => {
     $("run").classList.add("dirty");
     const off = [...box.querySelectorAll("input")].filter((i) => !i.checked).length;
-    $("mask-note").textContent = off ? `${off} feature${off > 1 ? "s" : ""} withheld` : "all features observed";
+    $("mask-note").textContent = off ? `${off} series withheld` : "All series observed";
   });
 }
 
@@ -142,7 +142,7 @@ async function run() {
   const { T, n, model } = S;
   const dz = model.dz;
 
-  status("encoding initial state", true);
+  status("Encoding the initial state", true);
   await nextFrame();
   const { m0, P0 } = model.encodeInitial(S.X, M, T);
   const tEnc = performance.now();
@@ -165,12 +165,12 @@ async function run() {
     S.Pdiag = P;
     charts.drawLatent($("c-latent"), { mf, dz, upTo: t, dates: S.dates });
     $("progress").style.width = ((t / T) * 100).toFixed(1) + "%";
-    status(`filtering ${t.toLocaleString()} / ${T.toLocaleString()} observations`, true);
+    status(`Filtering ${t.toLocaleString()} of ${T.toLocaleString()} observations`, true);
     await nextFrame();
   }
   const tFilt = performance.now();
 
-  status("clustering latent trajectory", true);
+  status("Fitting mixtures", true);
   await nextFrame();
   const mu = new Float64Array(dz), sd = new Float64Array(dz);
   for (let j = 0; j < dz; j++) {
@@ -354,22 +354,24 @@ function render() {
   const ari = adjustedRand(Array.from(labels), S.refLabels);
   const masked = S.maskedOff.length > 0;
   $("ver-title").textContent = masked
-    ? "Deviation from the unmasked reference run"
+    ? "Effect of withholding those series"
     : "Agreement with the Python implementation";
   $("ver-dev").textContent = maxDev < 0.01 ? maxDev.toExponential(1) : maxDev.toFixed(3);
   $("ver-dev-label").textContent = masked
-    ? "max latent shift caused by withholding features"
-    : "max latent deviation vs Python (float precision of the shipped reference)";
+    ? "Largest shift in the latent path caused by withholding series"
+    : "Largest deviation from the Python filter, which is the rounding precision of the shipped reference";
   $("ver-ari").textContent = ari.toFixed(3);
   $("ver-ari-label").textContent = masked
-    ? `regime agreement with the unmasked run (k=${k})`
-    : `regime agreement with the Python reference labeling (k=${k} vs reference k=${S.summary.k})`;
+    ? `Regime agreement with the unmasked run at k=${k}`
+    : `Regime agreement with the Python labelling, k=${k} against reference k=${S.summary.k}`;
   $("ver-k").textContent = `${S.bestK}`;
   $("timing").textContent =
     `encoder ${timing.encode.toFixed(0)} ms · filter ${timing.filter.toFixed(0)} ms · ` +
     `clustering ${timing.cluster.toFixed(0)} ms`;
   $("progress").style.width = "100%";
-  status(masked ? `complete, ${S.maskedOff.length} feature(s) withheld` : "complete", false);
+  status(masked
+    ? `Complete, ${S.maskedOff.length} series withheld`
+    : "Complete", false);
   renderDetail();
 }
 
@@ -418,7 +420,7 @@ $("smooth").addEventListener("input", () => {
 });
 $("reset-mask").addEventListener("click", () => {
   $("feature-list").querySelectorAll("input").forEach((i) => (i.checked = true));
-  $("mask-note").textContent = "all features observed";
+  $("mask-note").textContent = "All series observed";
   run();
 });
 let resizeTimer;
@@ -428,6 +430,6 @@ window.addEventListener("resize", () => {
 });
 
 boot().catch((err) => {
-  status("failed to load: " + err.message);
+  status("Could not load: " + err.message);
   console.error(err);
 });

@@ -3,80 +3,79 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RegimeLab — live cross-asset regime filter</title>
-<meta name="description" content="A differentiable Kalman filter over a neural SDE, running client-side on three decades of cross-asset data to detect unobservable market regimes.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0b0d'/%3E%3Cpath d='M3 22 L9 20 L13 24 L17 9 L21 17 L25 15 L29 15' fill='none' stroke='%23e9e7e0' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<title>Cross-asset market regime detection</title>
+<meta name="description" content="A differentiable Kalman filter over a neural stochastic differential equation, run in the browser across three decades of cross-asset data to identify unobservable market regimes.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f7f6f2'/%3E%3Cpath d='M3 22 L9 20 L13 24 L17 9 L21 17 L25 15 L29 15' fill='none' stroke='%231a1917' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/source-serif-4-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/source-sans-3-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="grain" aria-hidden="true"></div>
 
-<header class="nameplate">
-  <div class="plate-left">
-    <div class="mark">REGIMELAB</div>
-    <h1>Cross-asset market regime filter</h1>
-    <p class="sub">A neural stochastic differential equation observed through a differentiable
-    extended Kalman filter. The model was trained offline in PyTorch; everything on this page,
-    from parsing the dataset to filtering three decades of observations and clustering the
-    latent path, runs in your browser.</p>
-  </div>
-  <div class="plate-right">
-    <dl class="spec">
-      <div><dt>span</dt><dd id="meta-span">&mdash;</dd></div>
-      <div><dt>observations</dt><dd id="meta-rows">&mdash;</dd></div>
-      <div><dt>features</dt><dd id="meta-features">&mdash;</dd></div>
-      <div><dt>parameters</dt><dd id="meta-params">&mdash;</dd></div>
-      <div><dt>checkpoint</dt><dd>epoch <span id="meta-epoch">&mdash;</span></dd></div>
-      <div><dt>val elbo</dt><dd id="meta-val">&mdash;</dd></div>
-    </dl>
-  </div>
+<header class="masthead shell">
+  <div class="eyebrow">Latent state-space models</div>
+  <h1>Cross-asset market regime detection</h1>
+  <p class="deck">A neural stochastic differential equation, observed through a differentiable
+  extended Kalman filter, applied to thirty years of yields, credit, volatility and macro data.
+  The model was trained in PyTorch. <strong>Everything on this page runs in your browser</strong>,
+  from reading the dataset to filtering all 7,733 observations and clustering the result.</p>
+
+  <dl class="specs">
+    <div><dt>Sample</dt><dd id="meta-span">&mdash;</dd></div>
+    <div><dt>Observations</dt><dd id="meta-rows">&mdash;</dd></div>
+    <div><dt>Features</dt><dd id="meta-features">&mdash;</dd></div>
+    <div><dt>Parameters</dt><dd id="meta-params">&mdash;</dd></div>
+    <div><dt>Checkpoint</dt><dd>epoch <span id="meta-epoch">&mdash;</span></dd></div>
+    <div><dt>Validation ELBO</dt><dd id="meta-val">&mdash;</dd></div>
+  </dl>
 </header>
 
 <div class="statusbar">
-  <span class="lamp" id="lamp" aria-hidden="true"></span>
-  <span id="status-text">initialising</span>
-  <span class="track"><span class="fill" id="progress"></span></span>
-  <span class="timing" id="timing"></span>
+  <div class="inner">
+    <span class="dot" id="lamp" aria-hidden="true"></span>
+    <span id="status-text">Loading</span>
+    <span class="track"><span class="fill" id="progress"></span></span>
+    <span class="timing" id="timing"></span>
+  </div>
 </div>
 
-<main>
+<main class="shell">
   <aside class="rail">
     <section class="ctl">
       <h2>Run</h2>
-      <button id="run" class="primary">Run filter</button>
-      <p class="hint">Re-runs the encoder, the filter and the clustering over the full panel.</p>
+      <button id="run" class="primary">Run the filter</button>
+      <p class="hint">Runs the encoder, the filter and the clustering over the whole sample.</p>
     </section>
 
     <section class="ctl">
       <h2>Regimes</h2>
       <label class="field">
-        <span>count</span>
+        <span>Count</span>
         <select id="kselect">
-          <option value="auto" selected>auto (BIC)</option>
+          <option value="auto" selected>Chosen by BIC</option>
           <option value="2">2</option><option value="3">3</option>
           <option value="4">4</option><option value="5">5</option>
           <option value="6">6</option>
         </select>
       </label>
       <label class="field">
-        <span>smoothing</span>
+        <span>Smoothing</span>
         <input type="range" id="smooth" min="1" max="21" step="2" value="5">
         <output id="smooth-val">5</output>
       </label>
+      <p class="hint">Smoothing takes a rolling majority over the labels, so a single unusual
+      day does not open a new regime.</p>
     </section>
 
     <section class="ctl">
-      <h2>Withhold features</h2>
-      <p class="hint">Uncheck a series to hide it from the filter entirely. The mask propagates
-      into the Kalman gain, so the state is inferred from whatever remains. This is the same
-      machinery that absorbs genuinely missing data such as the TED spread after 2022.</p>
+      <h2>Withhold series</h2>
+      <p class="hint">Hide a series from the filter and run it again. The mask enters the Kalman
+      gain directly, so the state is inferred from whatever is left. It is the same mechanism
+      that handles genuinely missing data, such as the TED spread after it was discontinued.</p>
       <div id="feature-list" class="features"></div>
       <div class="maskbar">
-        <span id="mask-note">all features observed</span>
-        <button id="reset-mask" class="ghost">reset</button>
+        <span id="mask-note">All series observed</span>
+        <button id="reset-mask" class="ghost">Reset</button>
       </div>
     </section>
   </aside>
@@ -84,88 +83,98 @@
   <div class="stack">
     <section class="panel wide">
       <div class="phead">
-        <h2>Extracted regimes over the panel</h2>
+        <h2>Regimes across the sample</h2>
         <div id="legend" class="legend"></div>
       </div>
-      <canvas id="c-equity" class="chart" style="height:210px"></canvas>
-      <canvas id="c-vix" class="chart" style="height:120px"></canvas>
-      <canvas id="c-hy" class="chart" style="height:120px"></canvas>
+      <div class="plate">
+        <canvas id="c-equity" class="chart" style="height:220px"></canvas>
+        <canvas id="c-vix" class="chart" style="height:122px"></canvas>
+        <canvas id="c-hy" class="chart" style="height:122px"></canvas>
+      </div>
+      <p class="note">The band under each panel carries the regime; the tint behind it is the same
+      label at low opacity. Stress regimes line up with the volatility spikes and credit widening,
+      which is the behaviour the model was built to recover without being told about it.</p>
     </section>
 
     <section class="panel wide">
       <div class="phead"><h2>Filtered latent state</h2>
-        <span class="note">posterior mean of the first four dimensions, drawn as the filter advances</span></div>
-      <canvas id="c-latent" class="chart" style="height:280px"></canvas>
+        <span class="note">Posterior mean of the first four dimensions, drawn as the filter advances</span></div>
+      <div class="plate"><canvas id="c-latent" class="chart" style="height:290px"></canvas></div>
     </section>
 
     <section class="panel">
-      <div class="phead"><h2>Inspect a date</h2></div>
-      <input type="range" id="scrub" min="0" max="100" value="100" class="scrub">
+      <div class="phead"><h2>A single date</h2></div>
+      <input type="range" id="scrub" min="0" max="100" value="100" class="scrub" aria-label="Select a date">
       <div class="readout">
-        <div><span class="k">date</span><span class="v" id="scrub-date">&mdash;</span></div>
-        <div><span class="k">regime</span><span class="v" id="scrub-regime">&mdash;</span></div>
-        <div><span class="k">latent z</span><span class="v mono" id="scrub-latent">&mdash;</span></div>
+        <div><span class="k">Date</span><span class="v" id="scrub-date">&mdash;</span></div>
+        <div><span class="k">Regime</span><span class="v" id="scrub-regime">&mdash;</span></div>
+        <div><span class="k">Latent z</span><span class="v mono" id="scrub-latent">&mdash;</span></div>
       </div>
-      <canvas id="c-curve" class="chart" style="height:200px"></canvas>
-      <p class="note">Dots are the observed curve. The line is the decoder's reconstruction,
-      constrained to a Nelson-Siegel shape, so the model cannot draw a curve that no level,
-      slope and curvature could produce.</p>
+      <div class="plate"><canvas id="c-curve" class="chart" style="height:205px"></canvas></div>
+      <p class="note">Points are the observed curve. The line is the decoder's reconstruction,
+      which is forced onto a Nelson-Siegel shape, so it can only produce curves that some
+      combination of level, slope and curvature could generate.</p>
     </section>
 
     <section class="panel">
       <div class="phead"><h2>Observed against predicted</h2>
-        <span class="note">standardised units, one row per feature</span></div>
-      <canvas id="c-recon" class="chart" style="height:330px"></canvas>
-      <p class="note">Bars are the one-step-ahead prediction from the propagated state before it
-      sees the observation. Dots are what actually printed.</p>
+        <span class="note">Standardised units</span></div>
+      <div class="plate"><canvas id="c-recon" class="chart" style="height:340px"></canvas></div>
+      <p class="note">Bars are the one-step-ahead prediction made from the propagated state,
+      before it has seen the observation. Points are what was actually reported.</p>
     </section>
 
     <section class="panel">
       <div class="phead"><h2>Transitions</h2></div>
-      <canvas id="c-trans" class="chart" style="height:250px"></canvas>
+      <div class="plate"><canvas id="c-trans" class="chart" style="height:255px"></canvas></div>
     </section>
 
     <section class="panel">
-      <div class="phead"><h2>Model selection</h2></div>
-      <canvas id="c-bic" class="chart" style="height:170px"></canvas>
-      <p class="note">Mixtures are fitted here by expectation maximisation for every candidate
-      count, and the count with the lowest Bayesian information criterion is chosen unless you
-      override it.</p>
+      <div class="phead"><h2>Choosing the regime count</h2></div>
+      <div class="plate"><canvas id="c-bic" class="chart" style="height:180px"></canvas></div>
+      <p class="note">A Gaussian mixture is fitted here for each candidate count, and the one with
+      the lowest Bayesian information criterion is used unless you choose otherwise.</p>
     </section>
 
     <section class="panel wide">
-      <div class="phead"><h2>Regime characteristics</h2>
-        <span class="note">computed from the raw panel over each regime's days</span></div>
+      <div class="phead"><h2>What the regimes look like</h2>
+        <span class="note">Measured on the raw data over each regime's days</span></div>
       <div class="tablewrap">
         <table>
           <thead><tr>
-            <th>regime</th><th class="num">share</th><th class="num">avg spell</th>
+            <th>Regime</th><th class="num">Share</th><th class="num">Avg spell</th>
             <th class="num">VIX</th><th class="num">HY OAS</th><th class="num">10y&minus;3m</th>
-            <th class="num">ann. return</th><th class="num">ann. vol</th>
+            <th class="num">Ann. return</th><th class="num">Ann. vol</th>
           </tr></thead>
           <tbody id="stats-body"></tbody>
         </table>
       </div>
+      <p class="note">Annualised figures scale the mean daily log return within each regime by
+      252. For a regime made up largely of crash days this produces a very negative number, which
+      describes the days the regime covers rather than a return any strategy could have earned.</p>
     </section>
 
-    <section class="panel wide verify">
+    <section class="panel wide">
       <div class="phead"><h2 id="ver-title">Agreement with the Python implementation</h2></div>
       <div class="vgrid">
         <div><b id="ver-dev">&mdash;</b><span id="ver-dev-label"></span></div>
         <div><b id="ver-ari">&mdash;</b><span id="ver-ari-label"></span></div>
-        <div><b id="ver-k">&mdash;</b><span>regime count selected by BIC in this browser run</span></div>
+        <div><b id="ver-k">&mdash;</b><span>Regime count chosen by BIC in this run</span></div>
       </div>
-      <p class="note">The repository ships the filtered trajectory and the regime labels produced
-      by the Python pipeline. This page recomputes both from the raw dataset and compares, so any
-      divergence between the two implementations is visible rather than assumed.</p>
+      <p class="note">The repository ships the filtered trajectory and the regime labels that the
+      Python pipeline produced. This page recomputes both from the raw data and compares them, so
+      a disagreement between the two implementations would show up here rather than go unnoticed.</p>
     </section>
   </div>
 </main>
 
 <footer>
-  <p>Trained with PyTorch, float64 throughout. Inference here is a direct port: the Jacobians the
-  filter needs are written analytically, since both networks are linear&ndash;tanh&ndash;linear.
-  Source, tests and the full report are in the repository.</p>
+  <div class="inner">
+    <p>Trained in PyTorch at double precision. The browser implementation is a direct port: both
+    networks are linear, tanh, linear, so the Jacobians the filter needs are written out by hand
+    rather than differentiated, and they agree with the Python version to seven decimal places.</p>
+    <p>Source, tests and the full write-up are in the repository.</p>
+  </div>
 </footer>
 
 <script type="module" src="js/app.js"></script>

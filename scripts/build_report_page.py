@@ -39,12 +39,12 @@ CSS = """
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
-  font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 16px; line-height: 1.6;
 }
 .wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
 .prose { max-width: 720px; }
-h1, h2, h3 { font-family: "STIX Two Text", Georgia, serif; text-wrap: balance; }
+h1, h2, h3 { font-family: "Source Serif 4", Georgia, serif; text-wrap: balance; }
 h1 { font-size: 2.3rem; line-height: 1.15; margin: 10px 0 8px; font-weight: 600; }
 h2 { font-size: 1.45rem; margin: 52px 0 10px; font-weight: 600; }
 h3 { font-size: 1.1rem; margin: 28px 0 6px; font-weight: 600; }
@@ -67,7 +67,7 @@ p { margin: 10px 0; color: var(--ink); }
 }
 .stat .k { font-size: 0.78rem; color: var(--ink-2); margin-top: 2px; }
 .eq {
-  font-family: "STIX Two Text", "Times New Roman", serif; font-size: 1.12rem;
+  font-family: "Source Serif 4", "Times New Roman", serif; font-size: 1.12rem;
   background: var(--panel-2); border-left: 3px solid var(--accent);
   padding: 12px 18px; margin: 16px 0; overflow-x: auto; white-space: nowrap;
 }
@@ -100,7 +100,7 @@ figcaption { font-size: 0.85rem; color: var(--ink-2); margin-top: 8px; }
   background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
   padding: 12px 16px;
 }
-.stage b { font-family: "STIX Two Text", Georgia, serif; font-weight: 600; }
+.stage b { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; }
 .stage .d { font-size: 0.88rem; color: var(--ink-2); }
 .arrow { text-align: center; color: var(--ink-3); font-size: 0.9rem; padding: 2px 0; }
 .note {
@@ -184,7 +184,7 @@ def main() -> None:
         )
 
     html = Template("""<title>RegimeLab Validation Report</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>$css</style>
 <div class="wrap">
   <div class="masthead">

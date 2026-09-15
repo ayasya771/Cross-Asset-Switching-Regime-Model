@@ -9,13 +9,15 @@ clustered into discrete regimes.
 Implements the full blueprint *"Cross-Asset Market Regime Switching via Differentiable
 Latent State-Space Models"* in PyTorch.
 
-**[Live demo](https://YOUR-USERNAME.github.io/CrossAsset_Regime_Switching/)** — the
-trained model runs entirely in the browser. It fetches the dataset shipped in this
-repository, reproduces the preprocessing, runs the GRU encoder and the extended Kalman
-filter over all 7,733 observations while you watch the latent trajectory draw itself,
-fits Gaussian mixtures for every candidate regime count, and reports how closely it
-reproduces the Python results. You can withhold any subset of the eighteen features and
-re-run to see the filter infer the state from what is left.
+**[Live demo](https://YOUR-USERNAME.github.io/CrossAsset_Regime_Switching/)** (replace
+`YOUR-USERNAME` once Pages is enabled). The trained model runs entirely in the browser:
+it fetches the dataset shipped in this repository, reproduces the preprocessing, runs the
+GRU encoder and the extended Kalman filter over all 7,733 observations while the latent
+trajectory draws itself, fits Gaussian mixtures for every candidate regime count, and
+reports how closely it reproduces the Python results. Any subset of the eighteen series
+can be withheld and the filter re-run to see the state inferred from what is left.
+
+![The demo page](docs/preview.png)
 
 ## Architecture
 
@@ -115,8 +117,9 @@ python -m http.server 8000 --directory docs
 ### Publishing it
 
 In the repository settings, under Pages, set the source to "Deploy from a branch",
-branch `main`, folder `/docs`. Nothing else is required: no build, no Actions workflow,
-no external CDN. Then replace `YOUR-USERNAME` in the demo link above.
+branch `main`, folder `/docs`. Nothing else is required: no build step, no Actions
+workflow, and no third-party requests at runtime. The typefaces are served from
+`docs/fonts/` rather than a font CDN, so the page renders identically offline.
 
 ## Data (100% free and open)
 
@@ -190,6 +193,7 @@ docs/       the GitHub Pages demo
   js/charts.js  canvas renderers, no plotting library
   js/app.js     preprocessing, the run loop, and the controls
   data/         the panel, the exported weights, and the Python reference results
+  fonts/        self-hosted woff2 subsets, 108 KB total
 outputs/    checkpoints/, figures/, regimes/, REPORT.md
 ```
 
