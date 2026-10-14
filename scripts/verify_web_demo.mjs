@@ -8,11 +8,13 @@
 import { readFileSync } from "fs";
 import { RegimeModel, ekfStep, kmeans, gmm, modalSmooth, adjustedRand } from "../docs/js/engine.js";
 
-const D = new URL("../docs/data/", import.meta.url).pathname;
-const scaler = JSON.parse(readFileSync(D + "scaler.json", "utf8"));
-const model = new RegimeModel(JSON.parse(readFileSync(D + "model.json", "utf8")));
+import { fileURLToPath } from "url";
+import path from "path";
+const DATA_DIR = fileURLToPath(new URL("../docs/data/", import.meta.url));
+const scaler = JSON.parse(readFileSync(path.join(DATA_DIR, "scaler.json"), "utf8"));
+const model = new RegimeModel(JSON.parse(readFileSync(path.join(DATA_DIR, "model.json"), "utf8")));
 
-const lines = readFileSync(D + "panel.csv", "utf8").trim().split("\n");
+const lines = readFileSync(path.join(DATA_DIR, "panel.csv"), "utf8").trim().split("\n");
 const head = lines[0].split(",");
 const feats = scaler.features, n = feats.length, T = lines.length - 1;
 const colIx = feats.map(f => head.indexOf(f));
@@ -56,7 +58,7 @@ for (let t = 0; t < T; t++) {
 }
 console.log(`EKF over ${T} steps: ${Date.now() - t1} ms`);
 
-const ref = readFileSync(D + "reference_latent.csv", "utf8").trim().split("\n").map(l => l.split(",").map(Number));
+const ref = readFileSync(path.join(DATA_DIR, "reference_latent.csv"), "utf8").trim().split("\n").map(l => l.split(",").map(Number));
 let maxAbs = 0, sse = 0, refVar = 0;
 const refMean = ref.flat().reduce((a,b)=>a+b,0)/(ref.length*model.dz);
 for (let t = 0; t < T; t++)
@@ -77,7 +79,7 @@ for (let j = 0; j < dz; j++) {
 const Z = new Float64Array(T*dz);
 for (let t = 0; t < T; t++) for (let j = 0; j < dz; j++) Z[t*dz+j] = (mf[t*dz+j]-mu[j])/sd[j];
 
-const refLab = readFileSync(D + "reference.csv","utf8").trim().split("\n").slice(1).map(l => +l.split(",")[1]);
+const refLab = readFileSync(path.join(DATA_DIR, "reference.csv"),"utf8").trim().split("\n").slice(1).map(l => +l.split(",")[1]);
 for (const k of [2,3,4,5,6]) {
   const t = Date.now();
   const g = gmm(Z, T, dz, k, 7);

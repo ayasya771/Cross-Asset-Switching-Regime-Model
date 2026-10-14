@@ -10,3 +10,7 @@ outputs/checkpoints/metrics.jsonl
 outputs/regimes/*.parquet
 outputs/regimes/*.npz
 outputs/report_page.html
+node_modules/
+project_v3.zip
+harness.mjs
+live_harness.mjs

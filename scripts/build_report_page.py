@@ -279,7 +279,7 @@ def main() -> None:
         **{f"fig{i}": (figs[i] if i < len(figs) else "") for i in range(7)},
     )
     out = OUTPUTS / "report_page.html"
-    out.write_text(html)
+    out.write_text(html, encoding="utf-8")
     print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB)")
 
 

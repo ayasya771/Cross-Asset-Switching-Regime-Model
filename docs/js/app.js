@@ -6,6 +6,14 @@
    the pipeline, against the weights exported from the trained checkpoint. */
 
 import { RegimeModel, ekfStep, gmm, modalSmooth, adjustedRand } from "./engine.js";
+import {
+  FEATURES as CUSTOM_FEATURES,
+  parseCsvRobust,
+  parseNum,
+  parseDateFlexible,
+  buildCustomPanel,
+  templateCsv,
+} from "./custom.js";
 import * as charts from "./charts.js";
 
 const DATA = "data/";
@@ -26,15 +34,21 @@ function parseCsv(text) {
   return { head, rows: lines.slice(1).map((l) => l.split(",")) };
 }
 
+function fetchOk(url, as = "json") {
+  return fetch(url).then((r) => {
+    if (!r.ok) throw new Error(url + " → HTTP " + r.status);
+    return as === "json" ? r.json() : r.text();
+  });
+}
 async function boot() {
   status("Loading dataset", true);
   const [scaler, modelJson, panelTxt, refTxt, summary, refLatentTxt] = await Promise.all([
-    fetch(DATA + "scaler.json").then((r) => r.json()),
-    fetch(DATA + "model.json").then((r) => r.json()),
-    fetch(DATA + "panel.csv").then((r) => r.text()),
-    fetch(DATA + "reference.csv").then((r) => r.text()),
-    fetch(DATA + "summary.json").then((r) => r.json()),
-    fetch(DATA + "reference_latent.csv").then((r) => r.text()),
+    fetchOk(DATA + "scaler.json", "json"),
+    fetchOk(DATA + "model.json", "json"),
+    fetchOk(DATA + "panel.csv", "text"),
+    fetchOk(DATA + "reference.csv", "text"),
+    fetchOk(DATA + "summary.json", "json"),
+    fetchOk(DATA + "reference_latent.csv", "text"),
   ]);
 
   S.scaler = scaler;

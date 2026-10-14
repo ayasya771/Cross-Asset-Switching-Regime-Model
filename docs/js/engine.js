@@ -364,7 +364,8 @@ const d2 = (Z, i, c, d) => {
 export function kmeans(Z, n, d, k, seed = 7, iters = 60) {
   const rnd = mulberry32(seed);
   const cent = [];
-  cent.push(Float64Array.from(Z.subarray(Math.floor(rnd() * n) * d, Math.floor(rnd() * n) * d + d)));
+  const first = Math.floor(rnd() * n);
+  cent.push(Float64Array.from(Z.subarray(first * d, first * d + d)));
   const dist = new Float64Array(n).fill(Infinity);
   while (cent.length < k) {
     let tot = 0;
@@ -414,7 +415,11 @@ export function modalSmooth(lab, w) {
 /* Adjusted Rand index between two labelings. */
 export function adjustedRand(a, b) {
   const n = a.length;
-  const ka = Math.max(...a) + 1, kb = Math.max(...b) + 1;
+  let ka = 0, kb = 0;
+  for (let i = 0; i < n; i++) {
+    if (a[i] + 1 > ka) ka = a[i] + 1;
+    if (b[i] + 1 > kb) kb = b[i] + 1;
+  }
   const tab = new Float64Array(ka * kb), ra = new Float64Array(ka), rb = new Float64Array(kb);
   for (let i = 0; i < n; i++) { tab[a[i] * kb + b[i]]++; ra[a[i]]++; rb[b[i]]++; }
   const c2 = (x) => (x * (x - 1)) / 2;

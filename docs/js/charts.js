@@ -6,11 +6,11 @@
    figures for anything that lines up in a column. */
 
 export const REGIME_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"];
-const INK = "#1a1917";
-const INK2 = "#57554e";
-const MUTED = "#8c897f";
-const GRID = "#eceae3";
-const SURFACE = "#ffffff";
+const INK = "#ececec";
+const INK2 = "#a3a3a3";
+const MUTED = "#737373";
+const GRID = "#2e2e2e";
+const SURFACE = "#1a1a1a";
 const MONO = '11px "IBM Plex Mono", ui-monospace, monospace';
 const MONO_SM = '10px "IBM Plex Mono", ui-monospace, monospace';
 
@@ -67,7 +67,7 @@ function makeBox(w, h, pad, xMin, xMax, yMin, yMax, log = false) {
   };
 }
 
-function regimeBands(ctx, box, labels, colors, alpha = 0.1, ribbon = 5) {
+function regimeBands(ctx, box, labels, colors, alpha = 0.22, ribbon = 5) {
   const n = labels.length;
   let s = 0;
   for (let i = 1; i <= n; i++) {
@@ -285,7 +285,7 @@ export function drawRecon(canvas, { features, x, xhat, mask }) {
     ctx.lineTo(mid, y + rowH / 2 - 1);
     ctx.stroke();
     const bx = (v) => mid + Math.max(-3.2, Math.min(3.2, v)) * scale;
-    ctx.fillStyle = "#c4c1b7";
+    ctx.fillStyle = "#3a3a3a";
     ctx.fillRect(Math.min(mid, bx(xhat[i])), y - 3, Math.abs(bx(xhat[i]) - mid), 6);
     ctx.fillStyle = INK;
     ctx.beginPath();
@@ -309,7 +309,7 @@ export function drawTransitions(canvas, { P, names, durations }) {
       ctx.fillStyle = "#2a78d6";
       ctx.fillRect(padL + j * cw, padT + i * ch, cw - 1.5, ch - 1.5);
       ctx.globalAlpha = 1;
-      ctx.fillStyle = v > 0.32 ? "#ffffff" : INK2;
+      ctx.fillStyle = v > 0.40 ? "#ececec" : INK2;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(v >= 0.001 ? (v * 100).toFixed(1) : "0", padL + j * cw + cw / 2, padT + i * ch + ch / 2);

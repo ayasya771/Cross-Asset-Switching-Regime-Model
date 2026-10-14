@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cross-asset market regime detection</title>
 <meta name="description" content="A differentiable Kalman filter over a neural stochastic differential equation, run in the browser across three decades of cross-asset data to identify unobservable market regimes.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f7f6f2'/%3E%3Cpath d='M3 22 L9 20 L13 24 L17 9 L21 17 L25 15 L29 15' fill='none' stroke='%231a1917' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230e0e0e'/%3E%3Cpath d='M3 22 L9 20 L13 24 L17 9 L21 17 L25 15 L29 15' fill='none' stroke='%23ececec' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preload" href="fonts/source-serif-4-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/source-sans-3-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
@@ -18,7 +18,8 @@
   <p class="deck">A neural stochastic differential equation, observed through a differentiable
   extended Kalman filter, applied to thirty years of yields, credit, volatility and macro data.
   The model was trained in PyTorch. <strong>Everything on this page runs in your browser</strong>,
-  from reading the dataset to filtering all 7,733 observations and clustering the result.</p>
+  from reading the dataset to filtering the whole sample and clustering the result.
+  You can also <strong>upload your own CSV</strong> below and run the same filter on it.</p>
 
   <dl class="specs">
     <div><dt>Sample</dt><dd id="meta-span">&mdash;</dd></div>
@@ -41,6 +42,35 @@
 
 <main class="shell">
   <aside class="rail">
+    <section class="ctl">
+      <h2>Data source</h2>
+      <div class="seg" role="group" aria-label="Data source">
+        <button id="src-shipped" class="segbtn active" type="button">Shipped panel</button>
+        <button id="src-upload" class="segbtn" type="button">My CSV</button>
+      </div>
+      <div id="upload-box" hidden>
+        <p class="hint">Upload a CSV with a <span class="mono">date</span> column plus any of the
+        18 model series (yields, credit, VIX, TED, returns, macro YoY) or raw closes
+        (<span class="mono">spx_close, ndx_close, usd_idx, wti</span>) &mdash; returns and
+        realized vol are derived automatically. Empty cells and
+        <span class="mono">NaN</span> mean &ldquo;not observed&rdquo; and are masked.</p>
+        <label class="filebtn">Choose CSV<input type="file" id="file" accept=".csv,text/csv" hidden></label>
+        <div class="filerow">
+          <button id="template" class="ghost" type="button">Template</button>
+          <button id="reset-src" class="ghost" type="button">Back to shipped</button>
+        </div>
+        <label class="field">
+          <span>Scaling</span>
+          <select id="scaler-mode">
+            <option value="recompute" selected>From my upload</option>
+            <option value="shipped">Shipped scaler</option>
+          </select>
+        </label>
+        <p class="hint" id="upload-note">No file chosen.</p>
+      </div>
+      <p class="hint" id="src-note">Shipped panel: synthetic validation data, 1997&ndash;2026.</p>
+    </section>
+
     <section class="ctl">
       <h2>Run</h2>
       <button id="run" class="primary">Run the filter</button>
