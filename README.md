@@ -7,10 +7,6 @@ continuous-time latent stochastic differential equation (SDE) and a
 Differentiable Kalman Filter (DKF), trained end to end by backpropagating
 through the filter, then clustered into discrete regimes.
 
-Implements the full blueprint *"Cross-Asset Market Regime Switching via
-Differentiable Latent State-Space Models"* in PyTorch, with a static
-browser demo that runs the trained filter entirely client-side.
-
 The page fetches the dataset shipped in this repository, reproduces the preprocessing, 
 runs the GRU encoder and the extended Kalman filter over all 7,733 observations while the
 latent trajectory draws itself, fits Gaussian mixtures for every candidate
