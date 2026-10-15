@@ -6,9 +6,9 @@
    figures for anything that lines up in a column. */
 
 export const REGIME_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"];
-const INK = "#ececec";
-const INK2 = "#a3a3a3";
-const MUTED = "#737373";
+const INK = "#ffffff";
+const INK2 = "#ffffff";
+const MUTED = "#ffffff";
 const GRID = "#2e2e2e";
 const SURFACE = "#1a1a1a";
 const MONO = '11px "IBM Plex Mono", ui-monospace, monospace';

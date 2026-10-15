@@ -2,6 +2,7 @@
 name = "regimelab"
 version = "1.0.0"
 description = "Cross-asset market regime switching via differentiable latent state-space models (VAE + neural SDE + differentiable Kalman filter)"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 dependencies = [
     "torch>=2.2",

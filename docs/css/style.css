@@ -18,14 +18,15 @@
   --plate-2: #222222;
   --rule: #2e2e2e;
   --rule-soft: #252525;
-  --ink: #ececec;
-  --ink-2: #a3a3a3;
-  --ink-3: #737373;
+  --ink: #ffffff;
+  --ink-2: #ffffff;
+  --ink-3: #ffffff;
   --accent: #8ab4f8;
   --accent-2: #aecbfa;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --tnr: "Times New Roman", Times, serif;
   --gutter: clamp(20px, 4vw, 56px);
   color-scheme: dark;
 }
@@ -72,7 +73,8 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; text-wrap: 
   max-width: 60ch;
   margin: 16px 0 0;
 }
-.deck strong { color: var(--ink); font-weight: 600; }
+.deck strong { color: #ffffff; font-weight: 700; font-family: var(--tnr); }
+strong { color: #ffffff; font-weight: 700; font-family: "Times New Roman", Times, serif; }
 
 .specs {
   display: grid;

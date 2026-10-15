@@ -2,8 +2,9 @@
 """End-to-end pipeline: acquire data, build the panel, train, extract regimes,
 render both reports, and refresh the payload the web demo loads.
 
-Data acquisition has two modes. ``--synthetic`` generates the calibrated panel
-with known regime ground truth and needs no network. The default downloads the
+Data acquisition has three modes. ``--synthetic`` generates the calibrated panel
+with known regime ground truth and needs no network. ``--custom CSV`` ingests a
+user-supplied wide CSV (see docs/CUSTOM_DATA.md). The default downloads the
 real series from the free endpoints; if that fails the run stops rather than
 silently substituting synthetic data, since the two are not interchangeable
 for any claim about real markets.
@@ -31,10 +32,14 @@ def main() -> None:
                      help="generate the synthetic panel instead of downloading")
     src.add_argument("--skip-download", action="store_true",
                      help="reuse whatever is already in data/raw")
+    src.add_argument("--custom", metavar="CSV",
+                     help="ingest your own wide CSV instead of downloading")
     ap.add_argument("--epochs", type=int, default=None)
     args = ap.parse_args()
 
-    if args.synthetic:
+    if args.custom:
+        run("ingest_custom.py", args.custom)
+    elif args.synthetic:
         run("make_synthetic.py")
     elif not args.skip_download:
         try:
@@ -47,7 +52,8 @@ def main() -> None:
             )
             raise SystemExit(1)
 
-    run("build_dataset.py")
+    if not args.custom:
+        run("build_dataset.py")
     run("train.py", *(["--epochs", str(args.epochs)] if args.epochs else []))
     run("extract_regimes.py")
     run("build_report_page.py")

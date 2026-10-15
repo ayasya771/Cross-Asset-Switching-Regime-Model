@@ -7,6 +7,7 @@
    the shipped reference, so CI catches any drift between them. */
 import { readFileSync } from "fs";
 import { RegimeModel, ekfStep, kmeans, gmm, modalSmooth, adjustedRand } from "../docs/js/engine.js";
+import { parseCsvRobust, buildCustomPanel, templateCsv } from "../docs/js/custom.js";
 
 import { fileURLToPath } from "url";
 import path from "path";
@@ -91,3 +92,26 @@ const TOL = 1e-5;
 let devOk = maxAbs < TOL;
 console.log(`\n${devOk ? "PASS" : "FAIL"}: browser engine matches the Python filter within ${TOL}`);
 if (!devOk) process.exit(1);
+
+/* Custom-upload path: rebuilding the shipped panel through buildCustomPanel
+   (shipped scaler) must reproduce the direct X/M/dt above, proving the upload
+   pipeline applies the documented transforms instead of a parallel formula. */
+const panelText = readFileSync(path.join(DATA_DIR, "panel.csv"), "utf8");
+const rebuilt = buildCustomPanel(parseCsvRobust(panelText), scaler, { scalerMode: "shipped" });
+if (!rebuilt.ok) { console.log(`FAIL: custom builder rejected panel.csv: ${rebuilt.error}`); process.exit(1); }
+let maxX = 0, maxDt = 0, maskDiff = 0;
+for (let t = 0; t < T; t++) {
+  maxDt = Math.max(maxDt, Math.abs(rebuilt.dt[t] - dt[t]));
+  for (let j = 0; j < n; j++) {
+    maxX = Math.max(maxX, Math.abs(rebuilt.X[t * n + j] - X[t * n + j]));
+    if ((rebuilt.M[t * n + j] ? 1 : 0) !== (M[t * n + j] ? 1 : 0)) maskDiff++;
+  }
+}
+const tpl = parseCsvRobust(templateCsv());
+const tplOk = tpl.head[0] === "date" && tpl.rows.length >= 1;
+console.log(`custom builder vs direct: max |dX| ${maxX.toExponential(2)}, max |ddt| ${maxDt.toExponential(2)}, mask diffs ${maskDiff}, template ${tplOk ? "ok" : "BAD"}`);
+if (!(maxX < 1e-12 && maxDt < 1e-12 && maskDiff === 0 && tplOk)) {
+  console.log("FAIL: custom upload pipeline diverges from the shipped path");
+  process.exit(1);
+}
+console.log("PASS: custom upload pipeline reproduces the shipped panel");

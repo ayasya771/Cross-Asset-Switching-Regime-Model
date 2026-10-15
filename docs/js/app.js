@@ -29,9 +29,12 @@ function status(text, busy = false) {
 }
 
 function parseCsv(text) {
-  const lines = text.trim().split("\n");
-  const head = lines[0].split(",");
-  return { head, rows: lines.slice(1).map((l) => l.split(",")) };
+  // Robust reader (quotes, CRLF, whitespace) shared with the upload path.
+  // Missing cells ("", "NaN", ".", "NA", "null", ...) are left for the caller:
+  // parseFloat on them yields NaN, which Number.isFinite rejects, so the
+  // observation stays masked — the same mechanism as genuinely missing data.
+  const { head, rows } = parseCsvRobust(text);
+  return { head, rows };
 }
 
 function fetchOk(url, as = "json") {
@@ -108,6 +111,10 @@ async function boot() {
   buildFeatureToggles();
   $("scrub").max = String(T - 1);
   $("scrub").value = String(T - 1);
+  S.mode = "shipped";
+  S.shipped = { X: S.X, M: S.M, dt: S.dt, dates: S.dates, raw: S.raw, T, n,
+                refLabels: S.refLabels, refLatent: S.refLatent };
+  wireCustomSource();
   await run();
 }
 
@@ -126,11 +133,11 @@ function buildFeatureToggles() {
       `<span class="tcov">${((obs / S.T) * 100).toFixed(0)}%</span>`;
     box.appendChild(row);
   });
-  box.addEventListener("change", () => {
+  box.onchange = () => {
     $("run").classList.add("dirty");
     const off = [...box.querySelectorAll("input")].filter((i) => !i.checked).length;
     $("mask-note").textContent = off ? `${off} series withheld` : "All series observed";
-  });
+  };
 }
 
 function maskedCopy() {
@@ -142,7 +149,141 @@ function maskedCopy() {
   return { M, off };
 }
 
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+/* ---- Custom CSV upload ---------------------------------------------- */
+
+function setSourceTab(which) {
+  $("src-shipped").classList.toggle("active", which === "shipped");
+  $("src-upload").classList.toggle("active", which === "upload");
+  $("upload-box").hidden = which !== "upload";
+}
+
+function useShippedSource() {
+  if (!S.shipped) return;
+  Object.assign(S, {
+    X: S.shipped.X, M: S.shipped.M, dt: S.shipped.dt,
+    dates: S.shipped.dates, raw: S.shipped.raw,
+    T: S.shipped.T, n: S.shipped.n, mode: "shipped",
+    refLabels: S.shipped.refLabels, refLatent: S.shipped.refLatent,
+    customMeta: null, customName: null,
+  });
+  $("meta-span").textContent = `${S.scaler.start} to ${S.scaler.end}`;
+  $("meta-rows").textContent = S.T.toLocaleString();
+  $("src-note").textContent = `Shipped panel: ${S.scaler.start} to ${S.scaler.end}.`;
+  $("upload-note").textContent = "No file chosen.";
+  setSourceTab("shipped");
+  buildFeatureToggles();
+  $("scrub").max = String(S.T - 1);
+  $("scrub").value = String(S.T - 1);
+  run();
+}
+
+async function handleCustomFile(file) {
+  if (!file) return;
+  status(`Reading ${file.name}`, true);
+  // 5 MB guard keeps a pathological spreadsheet from freezing the tab.
+  if (file.size > 8 * 1024 * 1024) {
+    $("upload-note").textContent = `File too large (${(file.size / 1048576).toFixed(1)} MB). Keep uploads under 8 MB.`;
+    status("Upload rejected", false);
+    return;
+  }
+  let text;
+  try {
+    text = await file.text();
+  } catch (e) {
+    $("upload-note").textContent = "Could not read that file: " + e.message;
+    status("Upload failed", false);
+    return;
+  }
+  let parsed;
+  try {
+    parsed = parseCsvRobust(text);
+  } catch (e) {
+    $("upload-note").textContent = "Could not parse that CSV: " + e.message;
+    status("Upload failed", false);
+    return;
+  }
+  if (!parsed.head.length) {
+    $("upload-note").textContent = "Empty file: expected a header row plus data rows.";
+    status("Upload failed", false);
+    return;
+  }
+  const built = buildCustomPanel(parsed, {
+    mean: S.scaler.mean, std: S.scaler.std,
+  }, { scalerMode: $("scaler-mode").value });
+  if (!built.ok) {
+    $("upload-note").textContent = built.error;
+    status("Upload rejected", false);
+    return;
+  }
+  Object.assign(S, {
+    X: built.X, M: built.M, dt: built.dt, dates: built.dates, raw: built.raw,
+    T: built.T, n: built.n, mode: "custom",
+    refLabels: null, refLatent: null,
+    customMeta: built, customName: file.name,
+  });
+  $("meta-span").textContent = `${built.start} to ${built.end} (upload)`;
+  $("meta-rows").textContent = built.T.toLocaleString();
+  const cov = FEATURES_COVERAGE_LINE(built.coverage);
+  const warn = built.warnings.length ? " " + built.warnings.join(" ") : "";
+  $("upload-note").textContent =
+    `${file.name}: ${built.T.toLocaleString()} rows, ${built.start} to ${built.end}. ${cov}${warn}`;
+  $("src-note").textContent = `Custom upload: ${file.name} (${built.T.toLocaleString()} rows).`;
+  setSourceTab("upload");
+  buildFeatureToggles();
+  $("scrub").max = String(S.T - 1);
+  $("scrub").value = String(S.T - 1);
+  await run();
+}
+
+function FEATURES_COVERAGE_LINE(coverage) {
+  const present = Object.entries(coverage).filter(([, c]) => c > 0.01).length;
+  const missing = Object.entries(coverage).filter(([, c]) => c <= 0.01).map(([f]) => f);
+  let s = `${present}/18 series observed.`;
+  if (missing.length) s += ` Masked throughout: ${missing.join(", ")}.`;
+  return s;
+}
+
+function wireCustomSource() {
+  $("src-shipped").addEventListener("click", () => {
+    if (S.mode !== "shipped") useShippedSource();
+    else setSourceTab("shipped");
+  });
+  $("src-upload").addEventListener("click", () => setSourceTab("upload"));
+  $("file").addEventListener("change", (e) => {
+    handleCustomFile(e.target.files[0]).catch((err) => {
+      $("upload-note").textContent = "Upload failed: " + err.message;
+      status("Upload failed", false);
+    });
+    e.target.value = "";
+  });
+  $("scaler-mode").addEventListener("change", () => {
+    if (S.mode === "custom" && S.customName)
+      $("upload-note").textContent += " (Scaling choice applies to the next file you choose.)";
+  });
+  $("reset-src").addEventListener("click", useShippedSource);
+  $("template").addEventListener("click", () => {
+    const blob = new Blob([templateCsv()], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "regime_template.csv";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  });
+}
+
+/* Yield to the renderer between chunks so the progress bar and the latent
+   trace paint as the filter advances. Falls back to a timer when
+   requestAnimationFrame is throttled (background tabs) or never fires
+   (headless browsers) — without this the run stalls with no feedback. */
+const nextFrame = () => new Promise((r) => {
+  let done = false;
+  const go = () => { if (!done) { done = true; r(); } };
+  if (typeof requestAnimationFrame === "function") {
+    try { requestAnimationFrame(go); } catch (e) { go(); }
+  }
+  setTimeout(go, 50);
+});
 
 async function run() {
   if (S.running) return;
@@ -234,7 +375,8 @@ async function run() {
 function finalize() {
   const { T, k } = S;
   const raw = S.fits[k].labels;
-  const vix = S.raw.vix;
+  const empty = new Float64Array(T).fill(NaN);
+  const vix = S.raw.vix || empty;
   const meanVix = [];
   for (let c = 0; c < k; c++) {
     let s = 0, cnt = 0;
@@ -258,7 +400,7 @@ function finalize() {
       for (const t of idx) if (Number.isFinite(arr[t])) { s += arr[t]; n2++; }
       return n2 ? s / n2 : NaN;
     };
-    const rets = idx.map((t) => S.raw.spx_ret[t]).filter(Number.isFinite);
+    const rets = idx.map((t) => (S.raw.spx_ret || empty)[t]).filter(Number.isFinite);
     const mean = rets.reduce((a, b) => a + b, 0) / (rets.length || 1);
     const varr = rets.reduce((a, b) => a + (b - mean) ** 2, 0) / (rets.length || 1);
     let runs = [], cur = 0;
@@ -267,13 +409,14 @@ function finalize() {
       else if (cur) { runs.push(cur); cur = 0; }
     }
     if (cur) runs.push(cur);
-    const slope = idx.map((t) => S.raw.y_10y[t] - S.raw.y_3m[t]).filter(Number.isFinite);
+    const y10 = S.raw.y_10y || empty, y3 = S.raw.y_3m || empty;
+    const slope = idx.map((t) => y10[t] - y3[t]).filter(Number.isFinite);
     stats.push({
       regime: c,
       days: idx.length,
       occupancy: (100 * idx.length) / T,
-      vix: avg(S.raw.vix),
-      hy_oas: avg(S.raw.hy_oas),
+      vix: avg(S.raw.vix || empty),
+      hy_oas: avg(S.raw.hy_oas || empty),
       slope: slope.reduce((a, b) => a + b, 0) / (slope.length || 1),
       ann_ret: 100 * 252 * mean,
       ann_vol: 100 * Math.sqrt(252 * varr),
@@ -317,19 +460,20 @@ function regimeNames(rows) {
 
 function render() {
   const { T, k, labels, names, stats, timing } = S;
-  const scrub = +$("scrub").value;
+  const scrub = Math.max(0, Math.min(T - 1, +$("scrub").value));
+  const seriesOf = (name) => (S.raw[name] ? Array.from(S.raw[name]) : []);
 
   charts.drawSeries($("c-equity"), {
-    values: Array.from(S.raw.spx_close), dates: S.dates, labels,
-    log: true, title: "Equity index, log scale", marker: scrub,
+    values: seriesOf("spx_close"), dates: S.dates, labels,
+    log: true, title: S.raw.spx_close ? "Equity index, log scale" : "Equity index (not in upload)", marker: scrub,
   });
   charts.drawSeries($("c-vix"), {
-    values: Array.from(S.raw.vix), dates: S.dates, labels,
-    title: "Volatility index", marker: scrub,
+    values: seriesOf("vix"), dates: S.dates, labels,
+    title: S.raw.vix ? "Volatility index" : "Volatility index (not in upload)", marker: scrub,
   });
   charts.drawSeries($("c-hy"), {
-    values: Array.from(S.raw.hy_oas), dates: S.dates, labels,
-    title: "High-yield credit spread, %", marker: scrub,
+    values: seriesOf("hy_oas"), dates: S.dates, labels,
+    title: S.raw.hy_oas ? "High-yield credit spread, %" : "High-yield spread (not in upload)", marker: scrub,
   });
   charts.drawLatent($("c-latent"), {
     mf: S.mf, dz: S.model.dz, upTo: T, dates: S.dates, labels, marker: scrub,
@@ -361,36 +505,52 @@ function render() {
     tb.appendChild(tr);
   });
 
-  let maxDev = 0;
-  for (let t = 0; t < T; t++)
-    for (let j = 0; j < S.model.dz; j++)
-      maxDev = Math.max(maxDev, Math.abs(S.mf[t * S.model.dz + j] - S.refLatent[t][j]));
-  const ari = adjustedRand(Array.from(labels), S.refLabels);
+  const custom = S.mode === "custom";
+  let maxDev = 0, ari = NaN;
+  if (!custom && S.refLatent && S.refLabels) {
+    for (let t = 0; t < T; t++)
+      for (let j = 0; j < S.model.dz; j++)
+        maxDev = Math.max(maxDev, Math.abs(S.mf[t * S.model.dz + j] - S.refLatent[t][j]));
+    ari = adjustedRand(Array.from(labels), S.refLabels);
+  }
   const masked = S.maskedOff.length > 0;
-  $("ver-title").textContent = masked
-    ? "Effect of withholding those series"
-    : "Agreement with the Python implementation";
-  $("ver-dev").textContent = maxDev < 0.01 ? maxDev.toExponential(1) : maxDev.toFixed(3);
-  $("ver-dev-label").textContent = masked
-    ? "Largest shift in the latent path caused by withholding series"
-    : "Largest deviation from the Python filter, which is the rounding precision of the shipped reference";
-  $("ver-ari").textContent = ari.toFixed(3);
-  $("ver-ari-label").textContent = masked
-    ? `Regime agreement with the unmasked run at k=${k}`
-    : `Regime agreement with the Python labelling, k=${k} against reference k=${S.summary.k}`;
+  if (custom) {
+    $("ver-title").textContent = "Custom upload: no shipped reference";
+    $("ver-dev").textContent = "n/a";
+    $("ver-dev-label").textContent = "The shipped reference covers the shipped panel only, so there is nothing to compare this upload against.";
+    $("ver-ari").textContent = "n/a";
+    $("ver-ari-label").textContent = masked
+      ? `Regime agreement with the unmasked upload at k=${k}`
+      : `Regimes fitted on your upload at k=${k}; try other counts and smoothing above`;
+  } else {
+    $("ver-title").textContent = masked
+      ? "Effect of withholding those series"
+      : "Agreement with the Python implementation";
+    $("ver-dev").textContent = maxDev < 0.01 ? maxDev.toExponential(1) : maxDev.toFixed(3);
+    $("ver-dev-label").textContent = masked
+      ? "Largest shift in the latent path caused by withholding series"
+      : "Largest deviation from the Python filter, which is the rounding precision of the shipped reference";
+    $("ver-ari").textContent = ari.toFixed(3);
+    $("ver-ari-label").textContent = masked
+      ? `Regime agreement with the unmasked run at k=${k}`
+      : `Regime agreement with the Python labelling, k=${k} against reference k=${S.summary.k}`;
+  }
   $("ver-k").textContent = `${S.bestK}`;
   $("timing").textContent =
     `encoder ${timing.encode.toFixed(0)} ms · filter ${timing.filter.toFixed(0)} ms · ` +
     `clustering ${timing.cluster.toFixed(0)} ms`;
   $("progress").style.width = "100%";
-  status(masked
-    ? `Complete, ${S.maskedOff.length} series withheld`
-    : "Complete", false);
+  status(custom && !masked
+    ? `Complete on upload (${S.customName || "custom CSV"})`
+    : masked
+      ? `Complete, ${S.maskedOff.length} series withheld`
+      : "Complete", false);
   renderDetail();
 }
 
 function renderDetail() {
-  const t = +$("scrub").value;
+  if (!S.labels || !S.mf) return;
+  const t = Math.max(0, Math.min(S.T - 1, +$("scrub").value));
   const { n, model } = S;
   $("scrub-date").textContent = S.dates[t];
   const lab = S.labels[t];
@@ -444,6 +604,8 @@ window.addEventListener("resize", () => {
 });
 
 boot().catch((err) => {
-  status("Could not load: " + err.message);
+  status("Could not load shipped data: " + err.message + " — you can still use My CSV above.");
+  try { setSourceTab("upload"); } catch (e) { /* pre-wire fallback */ }
+  try { wireCustomSource(); } catch (e) { /* already wired */ }
   console.error(err);
 });
