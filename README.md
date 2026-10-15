@@ -11,10 +11,8 @@ Implements the full blueprint *"Cross-Asset Market Regime Switching via
 Differentiable Latent State-Space Models"* in PyTorch, with a static
 browser demo that runs the trained filter entirely client-side.
 
-**[Live demo](https://YOUR-USERNAME.github.io/CrossAsset_Regime_Switching/)**
-(replace `YOUR-USERNAME` once Pages is enabled). The page fetches the dataset
-shipped in this repository, reproduces the preprocessing, runs the GRU
-encoder and the extended Kalman filter over all 7,733 observations while the
+**The page fetches the dataset shipped in this repository, reproduces the preprocessing, 
+runs the GRU encoder and the extended Kalman filter over all 7,733 observations while the
 latent trajectory draws itself, fits Gaussian mixtures for every candidate
 regime count, and reports how closely it reproduces the Python results. Any
 subset of the eighteen series can be withheld and the filter re-run to see
